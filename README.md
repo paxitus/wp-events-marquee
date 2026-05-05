@@ -154,7 +154,29 @@ If you're upgrading from v1: deactivate v1, activate v2, place `[wpem_carousel]`
 
 ## Versioning
 
-Plugin version is in the header (`Version: 2.1.0`) and the `WPEM_VERSION` constant. Asset versions key off `WPEM_VERSION` so cache-busting flows automatically when the plugin bumps.
+Plugin version is in the header (`Version: 2.1.3`) and the `WPEM_VERSION` constant. Asset versions key off `WPEM_VERSION` so cache-busting flows automatically when the plugin bumps.
+
+## Changelog
+
+### v2.1.3
+
+Date pill color and font family swapped from hardcoded values to Elementor site tokens (`--e-global-color-primary`, `--e-global-typography-text-font-family`) with safe fallbacks. Hover state now uses `filter: brightness(1.15)` so it tracks the resolved primary color instead of a hardcoded hex. No visible change on 134main; portfolio sites will inherit their own brand tokens on rollout.
+
+### v2.1.2
+
+Empty-state message typography (bigger, lighter) so it reads as a soft secondary message rather than tiny body copy.
+
+### v2.1.1
+
+Fix duplicate-card render in low-count carousels.
+
+### v2.1.0
+
+Native recurring-event support in the carousel (weekly + monthly schedules with next-occurrence date).
+
+### v2.0.6
+
+First public release of the v2 standalone shortcode events carousel plugin.
 
 ## Repository
 
