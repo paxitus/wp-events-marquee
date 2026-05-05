@@ -1,0 +1,274 @@
+/*
+ * WP Events Marquee v2 — Carousel stylesheet.
+ *
+ * Class prefix: .wpem-
+ * No Elementor selectors, no DCE selectors, no opacity:0 reveal pattern.
+ * Buttons render visible from first paint.
+ *
+ * Visual specs sourced from v2-visual-audit.md (134main.com, 2026-05-04).
+ */
+
+/* ----- Carousel container ------------------------------------------------ */
+
+.wpem-carousel {
+	position: relative;
+	width: 100%;
+	max-width: 100%;
+	margin: 0 auto;
+	/* v2.0.1 — 20px padding so the carousel sits cleanly inside its
+	 * Elementor section/column frame across the 9-site rollout. Padding
+	 * applied to the OUTER wrapper, not the .swiper element, so Swiper's
+	 * width measurement and slide arithmetic are unaffected. */
+	padding: 20px;
+	box-sizing: border-box;
+}
+
+.wpem-carousel *,
+.wpem-carousel *::before,
+.wpem-carousel *::after {
+	box-sizing: border-box;
+}
+
+.wpem-carousel .wpem-swiper {
+	/* v2.0.6 — overflow:hidden restored (the v2.0.5 clip-path -60px inset let
+	 * adjacent slides bleed up to 60px past the wrapper edges, which became
+	 * visible after the marquee-spacer columns were removed on mobile). Nav
+	 * arrows now sit FULLY inside the swiper's padding-box, flush at left/right
+	 * edges. They overlap the leftmost/rightmost slide by their full 36px
+	 * width — this is the maximum-out position achievable without changing
+	 * the DOM (buttons are children of .swiper, so any clip on .swiper clips
+	 * them too). See report for trade-off discussion. */
+	overflow: hidden;
+	padding: 0 0 32px 0; /* room for pagination dots */
+}
+
+/* ----- Card -------------------------------------------------------------- */
+
+.wpem-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	max-width: 500px;
+	height: auto;
+	padding: 12px;
+	margin: 0 auto;
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+/* ----- Date pill --------------------------------------------------------- */
+
+.wpem-card__date {
+	display: inline-block;
+	width: 95.5%;
+	margin: 0 8px;
+	padding: 12px 24px;
+	background-color: #592E51;
+	color: #ffffff;
+	font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+	font-size: 15px;
+	font-weight: 400;
+	line-height: 15px;
+	text-align: center;
+	text-decoration: none;
+	border-radius: 3px;
+	transition: background-color 0.15s ease-in-out;
+}
+
+.wpem-card__date:hover,
+.wpem-card__date:focus-visible {
+	background-color: #6b3a61;
+	color: #ffffff;
+	text-decoration: none;
+}
+
+.wpem-card__date-text {
+	display: inline-block;
+}
+
+/* ----- Featured image ---------------------------------------------------- */
+
+.wpem-card__media {
+	display: block;
+	width: 100%;
+	margin-top: 5px;
+	padding: 0 6px;
+	text-decoration: none;
+}
+
+.wpem-card__image {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 9 / 16;
+	background-color: #f3f4f6;
+	/* No object-fit override — browser default fill matches the live site. */
+}
+
+.wpem-card__image--placeholder {
+	display: block;
+	width: 100%;
+	aspect-ratio: 9 / 16;
+	background-color: #f3f4f6;
+}
+
+/* ----- Ticket button wrapper + button ------------------------------------ */
+
+/* v2.0.2: Wrapper padding harmonized to `.wpem-card__media` (padding: 0 6px)
+ * so the button's left and right edges land on the same x-coordinates as the
+ * image's left and right edges. Was 10px 5px, which pulled the button in by
+ * 1px on each side relative to the image AND added 10px of top/bottom space
+ * that double-counted with the negative top margin.
+ */
+.wpem-card__button-wrap {
+	display: block;
+	width: 100%;
+	margin: -10px 0 5px 0; /* negative top margin pulls button over image */
+	padding: 0 6px; /* matches .wpem-card__media so button aligns to image edges */
+	box-sizing: border-box;
+}
+
+.wpem-card__button {
+	/* Visible from first paint. No opacity:0 / JS-reveal pattern.
+	 * v2.0.2: display:block (was inline-block) so the anchor fills the
+	 * wrapper regardless of any inherited text-align, and width:100% is
+	 * marked !important to win against theme/page-builder button resets
+	 * (Elementor's .elementor-button rules sometimes leak in via descendant
+	 * selectors and force width:auto on anchors with button-ish classes).
+	 */
+	display: block;
+	width: 100% !important;
+	max-width: 100%;
+	padding: 8px 16px;
+	background-color: #DC3545; /* fallback; inline style sets the per-type color */
+	color: #ffffff;
+	font-family: "EB Garamond", Georgia, "Times New Roman", serif;
+	font-size: 1.2rem; /* 19.2px at 16px root */
+	font-weight: 800;
+	line-height: 1.1;
+	text-align: center;
+	text-decoration: none;
+	text-transform: none;
+	border: none;
+	border-radius: 4px;
+	box-sizing: border-box;
+	cursor: pointer;
+	transition: filter 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+
+.wpem-card__button:hover,
+.wpem-card__button:focus-visible {
+	color: #ffffff;
+	text-decoration: none;
+	filter: brightness(1.08);
+	transform: translateY(-1px);
+}
+
+.wpem-card__button:active {
+	transform: translateY(0);
+	filter: brightness(0.95);
+}
+
+/* ----- Swiper navigation -------------------------------------------------- */
+
+.wpem-carousel .wpem-nav-prev,
+.wpem-carousel .wpem-nav-next {
+	width: 36px;
+	height: 36px;
+	margin-top: -22px;
+	color: #1f2937;
+	background-color: rgba(255, 255, 255, 0.9);
+	border: 1px solid rgba(31, 41, 55, 0.15);
+	border-radius: 50%;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+	transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+	z-index: 10; /* keep above slide content during overlap */
+}
+
+/* v2.0.6 — arrows positioned flush with .wpem-swiper's left/right edges.
+ * Negative offsets aren't possible without escaping .wpem-swiper's
+ * overflow:hidden (which is required to prevent slide bleed). Single value
+ * applied at all viewports. */
+.wpem-carousel .wpem-nav-prev {
+	left: 0;
+}
+
+.wpem-carousel .wpem-nav-next {
+	right: 0;
+}
+
+.wpem-carousel .wpem-nav-prev:hover,
+.wpem-carousel .wpem-nav-next:hover {
+	background-color: #ffffff;
+	color: #111827;
+}
+
+.wpem-carousel .wpem-nav-prev::after,
+.wpem-carousel .wpem-nav-next::after {
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.wpem-carousel .swiper-button-disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+}
+
+/* ----- Swiper pagination -------------------------------------------------- */
+
+.wpem-carousel .wpem-pagination {
+	position: absolute;
+	bottom: 4px;
+	left: 0;
+	width: 100%;
+	text-align: center;
+}
+
+.wpem-carousel .wpem-pagination .swiper-pagination-bullet {
+	width: 8px;
+	height: 8px;
+	background-color: #9ca3af;
+	opacity: 1;
+}
+
+.wpem-carousel .wpem-pagination .swiper-pagination-bullet-active {
+	background-color: #1f2937;
+}
+
+/* ----- Empty state -------------------------------------------------------- */
+
+.wpem-carousel--empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 220px;
+	padding: 24px;
+	text-align: center;
+}
+
+.wpem-carousel--empty .wpem-empty-image {
+	max-width: 320px;
+	width: 100%;
+	height: auto;
+	margin: 0 auto 16px auto;
+}
+
+.wpem-carousel--empty .wpem-empty-message {
+	font-size: 16px;
+	color: #4b5563;
+	margin: 0;
+}
+
+/* ----- Advertisement type ------------------------------------------------ */
+
+/* Advertisement cards have no event date; the template already omits the
+ * date pill, but if a theme overrides the template we keep this rule as a
+ * defensive hide to prevent date pills bleeding through on ad cards. */
+.wpem-card[data-ticket-type="advertisement"] .wpem-card__date {
+	display: none;
+}

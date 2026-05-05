@@ -1,0 +1,22 @@
+# QA artifacts (local-only)
+staging-verification/
+
+# Internal operational docs (Lowthian-internal, not for public repo)
+DEPLOY.md
+ROLLOUT.md
+UPLOAD-AND-CLEANUP.md
+v2-visual-audit.md
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+
+# Node (in case any tooling lands here later)
+node_modules/
