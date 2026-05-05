@@ -314,6 +314,18 @@
 	margin: 0 auto;
 }
 
+/* v2.1.6: when the empty-state message is split onto two lines (the
+ * default copy is "No upcoming events. Check back soon."), tighten
+ * the gap between the two paragraphs so they read as a stacked pair
+ * rather than two unrelated sentences. The line-1 paragraph uses the
+ * default 0 margins above (it's the first child after the optional
+ * logo); the line-2 paragraph gets a small top margin equal to
+ * roughly a quarter line-height so the rhythm sits between "single
+ * paragraph" and "two distinct paragraphs". */
+.wpem-carousel--empty .wpem-empty-message--line-2 {
+	margin-top: 0.25em;
+}
+
 /* ----- Advertisement type ------------------------------------------------ */
 
 /* Advertisement cards have no event date; the template already omits the

@@ -608,6 +608,23 @@ class WPEM_Carousel {
 		);
 
 		/*
+		 * v2.1.6: split the empty-state message onto two lines at the first
+		 * sentence boundary so it renders as
+		 *
+		 *   No upcoming events.
+		 *   Check back soon.
+		 *
+		 * rather than a single long line. Splitting at render time (instead
+		 * of in the __() call) keeps the source string singular for
+		 * translators and preserves the existing wp_events_marquee_empty_state_message
+		 * filter contract: a site that filters the message can still return
+		 * a single "first. second." string and get the same two-line render;
+		 * a site that returns a single sentence with no period gracefully
+		 * degrades to a single-line render.
+		 */
+		$message_lines = $this->split_empty_message_lines( $message );
+
+		/*
 		 * v2.1.5: render the WordPress site's Custom Logo above the empty-state
 		 * message when one is set in Customizer -> Site Identity -> Logo. Uses
 		 * WP core (the_custom_logo + has_custom_logo) so this works on any
@@ -633,10 +650,54 @@ class WPEM_Carousel {
 			<?php if ( $image_url ) : ?>
 				<img src="<?php echo esc_url( $image_url ); ?>" alt="" class="wpem-empty-image" />
 			<?php endif; ?>
-			<p class="wpem-empty-message"><?php echo esc_html( $message ); ?></p>
+			<?php foreach ( $message_lines as $i => $line ) : ?>
+				<p class="wpem-empty-message wpem-empty-message--line-<?php echo (int) ( $i + 1 ); ?>"><?php echo esc_html( $line ); ?></p>
+			<?php endforeach; ?>
 		</div>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Split the empty-state message into 1-2 lines for stacked rendering.
+	 *
+	 * Splits at the FIRST sentence boundary (a period followed by whitespace
+	 * or end-of-string) so the canonical "No upcoming events. Check back soon."
+	 * renders as two lines. Trailing periods are preserved on each line. If
+	 * the message contains no period, returns a single-element array so the
+	 * render path produces a single line.
+	 *
+	 * @param string $message Full message text (post-filter).
+	 * @return string[] One or two non-empty lines.
+	 */
+	private function split_empty_message_lines( $message ) {
+		$message = trim( (string) $message );
+		if ( '' === $message ) {
+			return array();
+		}
+
+		// Split at the first ". " boundary. Limit of 2 means anything after
+		// the second period stays on line 2 (so a 3-sentence filtered message
+		// becomes "first." + "second. third.", still readable, no scope
+		// creep into multi-line cases the brief did not request).
+		$parts = preg_split( '/\.\s+/', $message, 2 );
+		if ( false === $parts || count( $parts ) < 2 ) {
+			return array( $message );
+		}
+
+		$first  = trim( $parts[0] );
+		$second = trim( $parts[1] );
+		if ( '' === $first || '' === $second ) {
+			return array( $message );
+		}
+
+		// preg_split consumed the period; restore it on the first line so the
+		// rendered copy reads "No upcoming events." not "No upcoming events".
+		if ( '.' !== substr( $first, -1 ) ) {
+			$first .= '.';
+		}
+
+		return array( $first, $second );
 	}
 
 	/**

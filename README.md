@@ -154,9 +154,13 @@ If you're upgrading from v1: deactivate v1, activate v2, place `[wpem_carousel]`
 
 ## Versioning
 
-Plugin version is in the header (`Version: 2.1.5`) and the `WPEM_VERSION` constant. Asset versions key off `WPEM_VERSION` so cache-busting flows automatically when the plugin bumps.
+Plugin version is in the header (`Version: 2.1.6`) and the `WPEM_VERSION` constant. Asset versions key off `WPEM_VERSION` so cache-busting flows automatically when the plugin bumps.
 
 ## Changelog
+
+### v2.1.6
+
+Empty-state message split onto two lines: "No upcoming events" on the first line, "Check back soon" on the second line. Centered alignment preserved. Splitting happens at render time at the first sentence boundary, so the existing `wp_events_marquee_empty_state_message` filter contract is unchanged and the source string stays singular for translators.
 
 ### v2.1.5
 
