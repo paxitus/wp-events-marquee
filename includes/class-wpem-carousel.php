@@ -607,9 +607,29 @@ class WPEM_Carousel {
 			__( 'No upcoming events. Check back soon.', 'wp-events-marquee' )
 		);
 
+		/*
+		 * v2.1.5: render the WordPress site's Custom Logo above the empty-state
+		 * message when one is set in Customizer -> Site Identity -> Logo. Uses
+		 * WP core (the_custom_logo + has_custom_logo) so this works on any
+		 * site that has a logo configured, with no theme dependency. The
+		 * logo wrapper is omitted entirely when no custom logo exists, which
+		 * keeps the message centered on its own and avoids an empty <div>.
+		 *
+		 * Sites that prefer the legacy filter-driven $image_url path (set via
+		 * Settings -> Events Marquee or wp_events_marquee_empty_state_image)
+		 * still work; that image renders below the logo. Most Abbott sites
+		 * leave $image_url empty and rely on the custom logo alone.
+		 */
+		$has_logo = function_exists( 'has_custom_logo' ) && has_custom_logo();
+
 		ob_start();
 		?>
 		<div class="wpem-carousel wpem-carousel--empty">
+			<?php if ( $has_logo ) : ?>
+				<div class="wpem-empty-logo">
+					<?php the_custom_logo(); ?>
+				</div>
+			<?php endif; ?>
 			<?php if ( $image_url ) : ?>
 				<img src="<?php echo esc_url( $image_url ); ?>" alt="" class="wpem-empty-image" />
 			<?php endif; ?>

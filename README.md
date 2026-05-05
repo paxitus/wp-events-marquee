@@ -154,9 +154,13 @@ If you're upgrading from v1: deactivate v1, activate v2, place `[wpem_carousel]`
 
 ## Versioning
 
-Plugin version is in the header (`Version: 2.1.4`) and the `WPEM_VERSION` constant. Asset versions key off `WPEM_VERSION` so cache-busting flows automatically when the plugin bumps.
+Plugin version is in the header (`Version: 2.1.5`) and the `WPEM_VERSION` constant. Asset versions key off `WPEM_VERSION` so cache-busting flows automatically when the plugin bumps.
 
 ## Changelog
+
+### v2.1.5
+
+Empty-state ("no events scheduled") now shows the site's WordPress custom logo above the message, with the whole block centered vertically and horizontally. Uses WP core `the_custom_logo()` so it works on any site that has a logo set in Customizer, Site Identity. Sites without a custom logo gracefully render the message alone. Empty-state min-height bumped so the carousel area doesn't collapse to a thin strip when no events are scheduled.
 
 ### v2.1.4
 

@@ -3,7 +3,7 @@
  * Plugin Name:       WP Events Marquee
  * Plugin URI:        https://github.com/paxitus/wp-events-marquee
  * Description:       Drop-in [wpem_carousel] shortcode that renders an upcoming-events carousel using ACF event data and a bundled Swiper. No Elementor or page-builder dependency.
- * Version:           2.1.4
+ * Version:           2.1.5
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Lowthian Design
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPEM_VERSION', '2.1.4' );
+define( 'WPEM_VERSION', '2.1.5' );
 define( 'WPEM_PLUGIN_FILE', __FILE__ );
 define( 'WPEM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPEM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

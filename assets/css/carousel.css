@@ -259,9 +259,37 @@
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	min-height: 220px;
+	/* v2.1.5: min-height bumped from 220px so the empty state occupies a
+	 * vertical footprint comparable to one populated 9/16 card column,
+	 * rather than collapsing to a thin strip when no events are scheduled.
+	 * 480px is a soft target that reads as "the carousel area" on desktop
+	 * and tablet without dominating mobile. The flex container lets the
+	 * stacked logo + message group center itself within that box. */
+	min-height: 480px;
 	padding: 24px;
 	text-align: center;
+}
+
+/* v2.1.5: WordPress Custom Logo wrapper. the_custom_logo() emits
+ * <a class="custom-logo-link"><img class="custom-logo" /></a>; we cap the
+ * inner <img> dimensions so the empty state stays balanced regardless of
+ * how big the site's source logo is. width:auto + height:auto preserves
+ * aspect ratio while max-width / max-height enforce the cap. The wrapper
+ * itself sits in the flex column flow above the message. */
+.wpem-carousel--empty .wpem-empty-logo {
+	display: block;
+	margin: 0 auto 20px auto;
+	line-height: 0; /* prevents inline-element baseline gap below the <a> */
+}
+
+.wpem-carousel--empty .wpem-empty-logo .custom-logo,
+.wpem-carousel--empty .wpem-empty-logo img {
+	display: block;
+	max-width: 220px;
+	max-height: 120px;
+	width: auto;
+	height: auto;
+	margin: 0 auto;
 }
 
 .wpem-carousel--empty .wpem-empty-image {
