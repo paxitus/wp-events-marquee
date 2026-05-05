@@ -20,3 +20,6 @@ v2-visual-audit.md
 
 # Node (in case any tooling lands here later)
 node_modules/
+
+# Distribution artifacts (built ZIPs for manual upload to client sites)
+dist/
