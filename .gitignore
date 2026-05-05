@@ -23,3 +23,6 @@ node_modules/
 
 # Distribution artifacts (built ZIPs for manual upload to client sites)
 dist/
+
+# Lowthian-internal agent state (persistent memory for AI tooling)
+.claude/
