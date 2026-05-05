@@ -220,10 +220,23 @@ class WPEM_Carousel {
 		// whether to duplicate slides for the loop-math edge case
 		// (e.g. 1 published event with desktopSlides=3 — Swiper requires
 		// slides.length >= slidesPerView * 2 for loop:true to work).
-		$cards = array();
+		//
+		// v2.1.1 defensive: dedupe by post ID. WP_Query adds GROUP BY on
+		// posts.ID when a meta_query produces JOINs, but the v2.1.0
+		// meta_query OR (end_date >= today OR is_recurring = '1') is the
+		// kind of clause that has historically tripped duplicate-row bugs
+		// on certain DB configs / plugin filters. Tracking seen IDs costs
+		// nothing and rules out a whole class of double-render symptoms.
+		$cards    = array();
+		$seen_ids = array();
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			$post_id     = get_the_ID();
+			$post_id = get_the_ID();
+			if ( isset( $seen_ids[ $post_id ] ) ) {
+				continue;
+			}
+			$seen_ids[ $post_id ] = true;
+
 			$slug        = $this->resolve_ticket_slug( $post_id );
 			$ticket_data = $this->get_ticket_type_data( $slug );
 
@@ -253,21 +266,37 @@ class WPEM_Carousel {
 			return $this->render_empty_state();
 		}
 
-		// v2.0.1: duplicate the slide list so Swiper loop math works at low
-		// event counts AND so a single-event site still visually fills the
-		// 3-up desktop layout. Threshold = desktopSlides * 2 (Swiper's
-		// internal loop minimum). Duplicates are full re-renders of the
-		// same cards in the same order — cheap, and Swiper's clone-on-loop
-		// happens on top of this so the marquee stays seamless.
-		$min_slides = max( $desktop_slides, $tablet_slides, $mobile_slides ) * 2;
+		// v2.1.1: duplicate slides ONLY when the event count is below the
+		// largest slidesPerView. Above that, Swiper's loop has enough real
+		// slides to cycle without cloning the same event twice into the
+		// natural sequence (Swiper's own clone-on-loop still happens at
+		// runtime, which is the seamless-marquee mechanism we want — what
+		// we do NOT want is server-side duplication adding a "ghost" copy
+		// of one event next to its original).
+		//
+		// Trigger threshold:  count < max(spv)
+		// Duplication target: max(spv) * 2 (Swiper's loop minimum)
+		//
+		// Examples (max_spv = 3):
+		//   1 event  → 1 < 3  → dupe to 6 cards (single-event sites still loop)
+		//   2 events → 2 < 3  → dupe to 6 cards (each event renders 3x)
+		//   3 events → 3 ≥ 3  → no dupe → 3 cards
+		//   5 events → 5 ≥ 3  → no dupe → 5 cards (PKA #1675 — Bill Withers)
+		//
+		// The previous v2.0.1 rule ( count < max_spv * 2 ) was over-aggressive
+		// and produced uneven dupes (5 → 6, dropping just one extra copy of
+		// the first card), which is exactly the duplicate-render bug Geoffrey
+		// reproduced on staging 2026-05-05.
+		$max_spv      = max( $desktop_slides, $tablet_slides, $mobile_slides );
 		$render_cards = $cards;
-		if ( count( $render_cards ) > 0 && count( $render_cards ) < $min_slides ) {
-			$pool = $cards;
-			while ( count( $render_cards ) < $min_slides ) {
+		if ( count( $render_cards ) > 0 && count( $render_cards ) < $max_spv ) {
+			$target = $max_spv * 2;
+			$pool   = $cards;
+			while ( count( $render_cards ) < $target ) {
 				foreach ( $pool as $c ) {
 					$render_cards[] = $c;
-					if ( count( $render_cards ) >= $min_slides ) {
-						break;
+					if ( count( $render_cards ) >= $target ) {
+						break 2;
 					}
 				}
 			}
