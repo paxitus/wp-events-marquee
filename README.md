@@ -47,6 +47,38 @@ Example with overrides:
 [wpem_carousel limit="6" desktop_slides="4" autoplay="0"]
 ```
 
+## Recurring events
+
+A recurring event is a single `event` post that repeats on a schedule (every Wednesday, every 15th, etc.) rather than a separate post per occurrence. The plugin keeps the post in the carousel for the duration of the recurrence and shows the event's **next occurrence** as the date pill.
+
+### Required ACF fields
+
+These fields ship in the bundled "Events" field group:
+
+| Field | Type | What it does |
+|---|---|---|
+| `is_recurring` | true/false | Marks the event as recurring. When truthy, the carousel keeps the event visible past its `end_date` (until the recurrence itself expires) and recomputes the displayed date. |
+| `recurrence_type` | select (`weekly` \| `monthly`) | Drives which schedule rule applies. Shown in the editor only when `is_recurring` is on. |
+| `recurrence_day` | select (`Sunday` … `Saturday`) | Day of the week the event repeats. Shown only when `recurrence_type = weekly`. Stored as the label string (the field's `return_format` is `label`). |
+| `monthly_day` | number 1–31 | Day of the month the event repeats. Shown only when `recurrence_type = monthly`. |
+| `end_date` | date | Last day the recurrence is active. After this date the recurring event drops out of the carousel automatically. |
+
+### Behavior rules
+
+1. **Past `end_date` is okay if the recurrence is still active.** The carousel query lets recurring events bypass the `end_date >= today` gate so a "every Wednesday" event stays visible even if its `end_date` is yesterday — provided the recurrence's final `end_date` is still in the future.
+2. **The date pill shows the next occurrence**, computed at render time:
+   - `weekly` — advances from today to the next match of `recurrence_day` (returning today if today is already that weekday).
+   - `monthly` — advances to `monthly_day` this month, or to next month if it has already passed. Months that are too short clamp to the month's last day, so `monthly_day = 31` shows Feb 28 (or Feb 29 in a leap year).
+3. **When the next occurrence falls past `end_date`**, the event is considered fully expired and drops from the carousel.
+4. **Single-occurrence events** (where `is_recurring` is off) behave exactly as before: the date pill renders the ACF `date` value, and the post leaves the carousel once `end_date` passes.
+
+### Authoring guidance for editors
+
+- Always fill in `date`, `start_time`, and `end_date` — `end_date` is required and acts as the recurrence's final boundary.
+- For weekly events, set `is_recurring` on, choose `weekly`, and pick the `recurrence_day`.
+- For monthly events, set `is_recurring` on, choose `monthly`, and set `monthly_day` (1–31).
+- The ACF UI hides the recurrence-specific fields until you turn `is_recurring` on; you don't need to clear them when switching back to a single-occurrence event.
+
 ## File breakdown
 
 | Path | Purpose |
@@ -122,7 +154,7 @@ If you're upgrading from v1: deactivate v1, activate v2, place `[wpem_carousel]`
 
 ## Versioning
 
-Plugin version is in the header (`Version: 2.0.0`) and the `WPEM_VERSION` constant. Asset versions key off `WPEM_VERSION` so cache-busting flows automatically when the plugin bumps.
+Plugin version is in the header (`Version: 2.1.0`) and the `WPEM_VERSION` constant. Asset versions key off `WPEM_VERSION` so cache-busting flows automatically when the plugin bumps.
 
 ## Repository
 

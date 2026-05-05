@@ -7,7 +7,12 @@
  * Query rules:
  *   - post_type = event
  *   - ACF show_in_carousel == 'Yes' (post_meta 'show_in_carousel')
- *   - ACF end_date >= today (post_meta 'end_date', stored 'Ymd' by ACF)
+ *   - AND one of:
+ *       a) ACF end_date >= today (post_meta 'end_date', stored 'Ymd' by ACF)
+ *       b) ACF is_recurring is truthy (post_meta 'is_recurring' = '1')
+ *     so a recurring event whose end_date has passed but whose recurrence is
+ *     still active stays in the carousel. The card's date pill displays the
+ *     computed next occurrence (see format_event_date_for_card()).
  *   - Order: ACF date ASC (post_meta 'date', stored 'Ymd' by ACF)
  *
  * Shortcode attributes:
@@ -81,11 +86,27 @@ class WPEM_Carousel {
 					'value'   => 'Yes',
 					'compare' => '=',
 				),
+				/*
+				 * v2.1.0: a recurring event with end_date < today should stay
+				 * visible in the carousel. The OR branch lets recurring posts
+				 * bypass the end_date gate at query time. We then compute the
+				 * next-occurrence date in PHP for the card's date pill, and if
+				 * that next occurrence falls past end_date the event drops out
+				 * of $cards (see render_shortcode()).
+				 */
 				array(
-					'key'     => 'end_date',
-					'value'   => $today,
-					'compare' => '>=',
-					'type'    => 'CHAR',
+					'relation' => 'OR',
+					array(
+						'key'     => 'end_date',
+						'value'   => $today,
+						'compare' => '>=',
+						'type'    => 'CHAR',
+					),
+					array(
+						'key'     => 'is_recurring',
+						'value'   => '1',
+						'compare' => '=',
+					),
 				),
 			),
 		);
@@ -206,18 +227,31 @@ class WPEM_Carousel {
 			$slug        = $this->resolve_ticket_slug( $post_id );
 			$ticket_data = $this->get_ticket_type_data( $slug );
 
+			$event_date = $this->format_event_date_for_card( $post_id );
+			if ( null === $event_date ) {
+				// Recurring event whose next occurrence is past end_date —
+				// drop the card rather than carry a stale or empty pill.
+				continue;
+			}
+
 			$cards[] = array(
 				'post_id'     => $post_id,
 				'slug'        => $slug,
 				'ticket_data' => $ticket_data,
 				'button_href' => $this->resolve_button_href( $post_id, $slug ),
 				'button_text' => $this->resolve_button_text( $slug, $ticket_data ),
-				'event_date'  => $this->format_event_date( (string) get_post_meta( $post_id, 'date', true ) ),
+				'event_date'  => $event_date,
 				'permalink'   => get_permalink( $post_id ),
 				'title'       => get_the_title(),
 			);
 		}
 		wp_reset_postdata();
+
+		// All recurring events past their final end_date were dropped above —
+		// re-check that anything is left to render before falling through.
+		if ( empty( $cards ) ) {
+			return $this->render_empty_state();
+		}
 
 		// v2.0.1: duplicate the slide list so Swiper loop math works at low
 		// event counts AND so a single-event site still visually fills the
@@ -286,6 +320,189 @@ class WPEM_Carousel {
 		}
 		// Already a friendly string, or some other meta shape — pass through.
 		return $raw;
+	}
+
+	/**
+	 * Resolve the date string shown on a card.
+	 *
+	 * For non-recurring events, this is just the formatted ACF 'date' meta.
+	 * For recurring events (is_recurring truthy + recognized recurrence_type),
+	 * this is the computed next occurrence in 'F j, Y' format. If that
+	 * computed next occurrence falls AFTER the recurrence's final end_date,
+	 * the event is considered fully expired and we return null so the caller
+	 * drops the card from the carousel.
+	 *
+	 * @param int $post_id Event post ID.
+	 * @return string|null Display date string, or null if the event should be dropped.
+	 */
+	private function format_event_date_for_card( $post_id ) {
+		$is_recurring = get_post_meta( $post_id, 'is_recurring', true );
+		if ( ! $this->is_recurring_truthy( $is_recurring ) ) {
+			return $this->format_event_date( (string) get_post_meta( $post_id, 'date', true ) );
+		}
+
+		$type = strtolower( (string) get_post_meta( $post_id, 'recurrence_type', true ) );
+		if ( 'weekly' !== $type && 'monthly' !== $type ) {
+			// Recurring flag set but type unrecognized — fall back to plain date.
+			return $this->format_event_date( (string) get_post_meta( $post_id, 'date', true ) );
+		}
+
+		$next_ts = $this->compute_next_occurrence_ts( $post_id, $type );
+		if ( null === $next_ts ) {
+			return $this->format_event_date( (string) get_post_meta( $post_id, 'date', true ) );
+		}
+
+		// Honor the final-end-date ceiling. ACF 'end_date' is stored 'Ymd'.
+		$end_raw = trim( (string) get_post_meta( $post_id, 'end_date', true ) );
+		if ( preg_match( '/^\d{8}$/', $end_raw ) ) {
+			$end_ts = strtotime( $end_raw );
+			if ( false !== $end_ts && $next_ts > $end_ts ) {
+				return null;
+			}
+		}
+
+		return date_i18n( 'F j, Y', $next_ts );
+	}
+
+	/**
+	 * Defensive truthy check for ACF is_recurring values.
+	 *
+	 * ACF true_false fields store '1' / '0' as post_meta strings, but
+	 * historically the snippet pattern used 'Yes' / 'No' choice values too.
+	 * Accept any reasonable shape so this works across portfolio sites.
+	 *
+	 * @param mixed $val Raw post_meta value.
+	 * @return bool
+	 */
+	private function is_recurring_truthy( $val ) {
+		if ( is_bool( $val ) ) {
+			return $val;
+		}
+		if ( is_int( $val ) ) {
+			return 1 === $val;
+		}
+		$str = strtolower( trim( (string) $val ) );
+		if ( '' === $str ) {
+			return false;
+		}
+		if ( '0' === $str || 'no' === $str || 'false' === $str ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Compute the next occurrence timestamp for a recurring event,
+	 * relative to today (date_i18n local time).
+	 *
+	 * weekly:  uses ACF 'recurrence_day' (label string "Sunday" .. "Saturday",
+	 *          per the field's return_format=label). Advances from today to
+	 *          the next matching weekday; if today already matches, returns
+	 *          today.
+	 * monthly: uses ACF 'monthly_day' (1–31). If the requested day-of-month
+	 *          has already passed this month, advances to next month. Days
+	 *          like 31 in February are clamped to the month's last day.
+	 *
+	 * @param int    $post_id
+	 * @param string $type    'weekly' | 'monthly' (caller has lowercased + validated).
+	 * @return int|null Unix timestamp of next occurrence, or null if the data is unusable.
+	 */
+	private function compute_next_occurrence_ts( $post_id, $type ) {
+		// Anchor "today" using date_i18n so we honor the site's timezone.
+		$today_ymd = date_i18n( 'Ymd' );
+		$today_ts  = strtotime( $today_ymd );
+		if ( false === $today_ts ) {
+			return null;
+		}
+
+		if ( 'weekly' === $type ) {
+			$label   = (string) get_post_meta( $post_id, 'recurrence_day', true );
+			$weekday = $this->weekday_label_to_int( $label );
+			if ( null === $weekday ) {
+				return null;
+			}
+			$today_w = (int) date( 'w', $today_ts );
+			$delta   = ( $weekday - $today_w + 7 ) % 7;
+			return strtotime( '+' . $delta . ' days', $today_ts );
+		}
+
+		// monthly
+		$day_raw = get_post_meta( $post_id, 'monthly_day', true );
+		if ( '' === $day_raw || null === $day_raw ) {
+			return null;
+		}
+		$day = (int) $day_raw;
+		if ( $day < 1 ) {
+			$day = 1;
+		}
+		if ( $day > 31 ) {
+			$day = 31;
+		}
+
+		$year_now  = (int) date( 'Y', $today_ts );
+		$month_now = (int) date( 'n', $today_ts );
+		$dom_now   = (int) date( 'j', $today_ts );
+
+		// First, try this month with the day clamped to the month's length.
+		$dim_now    = (int) date( 't', mktime( 0, 0, 0, $month_now, 1, $year_now ) );
+		$candidate  = min( $day, $dim_now );
+		if ( $candidate >= $dom_now ) {
+			return mktime( 0, 0, 0, $month_now, $candidate, $year_now );
+		}
+
+		// Otherwise advance to next month and clamp again.
+		$next_month = $month_now + 1;
+		$next_year  = $year_now;
+		if ( $next_month > 12 ) {
+			$next_month = 1;
+			++$next_year;
+		}
+		$dim_next   = (int) date( 't', mktime( 0, 0, 0, $next_month, 1, $next_year ) );
+		$candidate2 = min( $day, $dim_next );
+		return mktime( 0, 0, 0, $next_month, $candidate2, $next_year );
+	}
+
+	/**
+	 * Map an ACF recurrence_day label to a PHP weekday integer (0 = Sunday).
+	 *
+	 * The field stores labels because the field group sets return_format=label.
+	 * We accept the canonical names + a few defensive variants.
+	 *
+	 * @param string $label
+	 * @return int|null 0-6, or null if unrecognized.
+	 */
+	private function weekday_label_to_int( $label ) {
+		$norm = strtolower( trim( (string) $label ) );
+		if ( '' === $norm ) {
+			return null;
+		}
+		// Accept a bare 0-6 in case a site overrides return_format=value.
+		if ( ctype_digit( $norm ) ) {
+			$n = (int) $norm;
+			if ( $n >= 0 && $n <= 6 ) {
+				return $n;
+			}
+		}
+		$map = array(
+			'sunday'    => 0,
+			'sun'       => 0,
+			'monday'    => 1,
+			'mon'       => 1,
+			'tuesday'   => 2,
+			'tue'       => 2,
+			'tues'      => 2,
+			'wednesday' => 3,
+			'wed'       => 3,
+			'thursday'  => 4,
+			'thu'       => 4,
+			'thur'      => 4,
+			'thurs'     => 4,
+			'friday'    => 5,
+			'fri'       => 5,
+			'saturday'  => 6,
+			'sat'       => 6,
+		);
+		return isset( $map[ $norm ] ) ? $map[ $norm ] : null;
 	}
 
 	/**
