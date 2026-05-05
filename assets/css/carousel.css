@@ -154,7 +154,12 @@
 	padding: 8px 16px;
 	background-color: #DC3545; /* fallback; inline style sets the per-type color */
 	color: #ffffff;
-	font-family: "EB Garamond", Georgia, "Times New Roman", serif;
+	/* v2.1.4: font swapped from hardcoded "EB Garamond" to the Elementor
+	 * primary-typography site token with safe fallback. 134main inherits
+	 * EB Garamond via the token (matches prior render); portfolio sites
+	 * (Brulee La Grange, Cafe Brulee, etc.) inherit their own primary heading
+	 * font automatically on rollout. */
+	font-family: var(--e-global-typography-primary-font-family, "EB Garamond"), Georgia, "Times New Roman", serif;
 	font-size: 1.2rem; /* 19.2px at 16px root */
 	font-weight: 800;
 	line-height: 1.1;

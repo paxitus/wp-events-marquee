@@ -154,9 +154,13 @@ If you're upgrading from v1: deactivate v1, activate v2, place `[wpem_carousel]`
 
 ## Versioning
 
-Plugin version is in the header (`Version: 2.1.3`) and the `WPEM_VERSION` constant. Asset versions key off `WPEM_VERSION` so cache-busting flows automatically when the plugin bumps.
+Plugin version is in the header (`Version: 2.1.4`) and the `WPEM_VERSION` constant. Asset versions key off `WPEM_VERSION` so cache-busting flows automatically when the plugin bumps.
 
 ## Changelog
+
+### v2.1.4
+
+Card CTA button font family swapped from hardcoded `"EB Garamond"` to the Elementor primary-typography site token (`--e-global-typography-primary-font-family`) with safe fallback. Completes the date-pill + button portability work begun in v2.1.3. No visible change on 134main; portfolio sites (Brulee La Grange, Cafe Brulee, etc.) will inherit their own primary heading font on rollout.
 
 ### v2.1.3
 
